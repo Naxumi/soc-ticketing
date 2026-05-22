@@ -29,6 +29,18 @@ Analysts receive security alerts (from Wazuh or raw logs via webhooks), which ar
 - Data fetching with React Query
 - Dark mode
 
+## Roles & Permissions
+- **L1 Analyst (`L1_ANALYST`)**: Can view Active tickets (`OPEN`, `IN_PROGRESS`) and History. Responsible for initial triage. Can transition tickets from `OPEN` to `IN_PROGRESS`, and then escalate them to `ESCALATED` or mark as `FALSE_POSITIVE`.
+- **L2 Analyst (`L2_ANALYST`)**: Can view Active tickets (`ESCALATED`, `INVESTIGATING`) and History. Responsible for deep investigations. Can transition tickets from `ESCALATED` to `INVESTIGATING`, and then close them as `RESOLVED` or `FALSE_POSITIVE`.
+- **SOC Manager (`SOC_MANAGER`)**: Has full access. Can view all tickets, override any ticket status, delegate assignments, view the dashboard statistics, and manage users (register analysts, change roles, revoke sessions, delete users).
+
+## API Documentation
+The backend serves an OpenAPI specification and a Swagger UI.
+- **OpenAPI JSON**: `http://localhost:8080/api/openapi.json`
+- **Swagger UI**: `http://localhost:8080/swagger/index.html`
+
+*(Note: These files are served from the `backend/api` directory. You must run the server from the `backend` root folder for the API docs to load properly.)*
+
 ## How to run
 
 ### Backend
