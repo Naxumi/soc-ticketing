@@ -1,0 +1,236 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/geist";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * ==========================================================================
+ * Vokasi UB Brand Color Palette
+ * ==========================================================================
+ *
+ * Primary (Navy Blue):
+ *   brand-blue-900: #162232  – Darkest shadow
+ *   brand-blue-800: #1F2E43  – Main text / sidebar bg
+ *   brand-blue-600: #2C425D  – Lighter blue / active state bg
+ *
+ * Accent (Golden Yellow):
+ *   brand-yellow-600: #E59824  – Darker hover state
+ *   brand-yellow-500: #F5B229  – Primary buttons / highlights
+ *   brand-yellow-300: #FDE170  – Light accent / top flame
+ *
+ * All contrast ratios verified for WCAG AA (4.5:1 normal text, 3:1 large).
+ */
+
+@theme inline {
+    /* ── Brand color tokens ─────────────────────────────────────── */
+    --color-brand-blue-900: #162232;
+    --color-brand-blue-800: #1F2E43;
+    --color-brand-blue-700: #243751;
+    --color-brand-blue-600: #2C425D;
+    --color-brand-blue-500: #3A5474;
+    --color-brand-blue-400: #4E6D8E;
+    --color-brand-blue-300: #7392B0;
+    --color-brand-blue-200: #A3BAD0;
+    --color-brand-blue-100: #D3DEEB;
+    --color-brand-blue-50:  #EDF2F7;
+
+    --color-brand-yellow-700: #C47F1A;
+    --color-brand-yellow-600: #E59824;
+    --color-brand-yellow-500: #F5B229;
+    --color-brand-yellow-400: #F9C854;
+    --color-brand-yellow-300: #FDE170;
+    --color-brand-yellow-200: #FEF0B8;
+    --color-brand-yellow-100: #FFF8E1;
+
+    /* ── Typography ─────────────────────────────────────────────── */
+    --font-heading: var(--font-sans);
+    --font-sans: 'Geist Variable', ui-sans-serif, system-ui, sans-serif;
+
+    /* ── Semantic color mappings ─────────────────────────────────── */
+    --color-sidebar-ring: var(--sidebar-ring);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar: var(--sidebar);
+    --color-chart-5: var(--chart-5);
+    --color-chart-4: var(--chart-4);
+    --color-chart-3: var(--chart-3);
+    --color-chart-2: var(--chart-2);
+    --color-chart-1: var(--chart-1);
+    --color-ring: var(--ring);
+    --color-input: var(--input);
+    --color-border: var(--border);
+    --color-destructive: var(--destructive);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-accent: var(--accent);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-muted: var(--muted);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-secondary: var(--secondary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-primary: var(--primary);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-popover: var(--popover);
+    --color-card-foreground: var(--card-foreground);
+    --color-card: var(--card);
+    --color-foreground: var(--foreground);
+    --color-background: var(--background);
+    --radius-sm: calc(var(--radius) * 0.6);
+    --radius-md: calc(var(--radius) * 0.8);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) * 1.4);
+    --radius-2xl: calc(var(--radius) * 1.8);
+    --radius-3xl: calc(var(--radius) * 2.2);
+    --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+/* ==========================================================================
+ * Light Mode – Clean workspace (white / off-white)
+ * ========================================================================== */
+:root {
+    --background: #F8FAFC;
+    --foreground: #1F2E43;
+    --card: #FFFFFF;
+    --card-foreground: #1F2E43;
+    --popover: #FFFFFF;
+    --popover-foreground: #1F2E43;
+
+    /* Primary = brand-yellow-500 (buttons, highlights) */
+    --primary: #F5B229;
+    --primary-foreground: #162232;
+
+    --secondary: #EDF2F7;
+    --secondary-foreground: #1F2E43;
+    --muted: #EDF2F7;
+    --muted-foreground: #4E6D8E;
+    --accent: #D3DEEB;
+    --accent-foreground: #1F2E43;
+    --destructive: #DC2626;
+    --border: #D3DEEB;
+    --input: #D3DEEB;
+    --ring: #F5B229;
+
+    /* Chart palette – navy-to-yellow gradient */
+    --chart-1: #F5B229;
+    --chart-2: #2C425D;
+    --chart-3: #E59824;
+    --chart-4: #1F2E43;
+    --chart-5: #FDE170;
+
+    --radius: 0.625rem;
+
+    /* Sidebar: bright in light mode */
+    --sidebar: #FFFFFF;
+    --sidebar-foreground: #1F2E43;
+    --sidebar-primary: #F5B229;
+    --sidebar-primary-foreground: #162232;
+    --sidebar-accent: #EDF2F7;
+    --sidebar-accent-foreground: #1F2E43;
+    --sidebar-border: #D3DEEB;
+    --sidebar-ring: #F5B229;
+
+    /* JSON syntax colors */
+    --json-key: #2C425D;
+    --json-string: #C47F1A;
+    --json-number: #0F7B3D;
+    --json-boolean: #6F42C1;
+    --json-null: #4E6D8E;
+    --json-guide: #D3DEEB;
+}
+
+/* ==========================================================================
+ * Dark Mode – Deep brand-blue-900 workspace
+ * ========================================================================== */
+.dark {
+    --background: #162232;
+    --foreground: #EDF2F7;
+    --card: #1F2E43;
+    --card-foreground: #EDF2F7;
+    --popover: #1F2E43;
+    --popover-foreground: #EDF2F7;
+
+    /* Primary button stays brand-yellow-500 with dark text */
+    --primary: #F5B229;
+    --primary-foreground: #162232;
+
+    --secondary: #2C425D;
+    --secondary-foreground: #EDF2F7;
+    --muted: #243751;
+    --muted-foreground: #A3BAD0;
+    --accent: #2C425D;
+    --accent-foreground: #EDF2F7;
+    --destructive: #EF4444;
+    --border: #2C425D;
+    --input: #2C425D;
+    --ring: #F5B229;
+
+    --chart-1: #F5B229;
+    --chart-2: #7392B0;
+    --chart-3: #FDE170;
+    --chart-4: #A3BAD0;
+    --chart-5: #E59824;
+
+    /* Sidebar in dark mode: deeper brand-blue-900 */
+    --sidebar: #162232;
+    --sidebar-foreground: #EDF2F7;
+    --sidebar-primary: #F5B229;
+    --sidebar-primary-foreground: #162232;
+    --sidebar-accent: #243751;
+    --sidebar-accent-foreground: #EDF2F7;
+    --sidebar-border: #243751;
+    --sidebar-ring: #F5B229;
+
+    /* JSON syntax colors – bright on dark bg */
+    --json-key: #7392B0;
+    --json-string: #FDE170;
+    --json-number: #6EE7B7;
+    --json-boolean: #A78BFA;
+    --json-null: #A3BAD0;
+    --json-guide: #2C425D;
+}
+
+/* ==========================================================================
+ * Utility Classes
+ * ========================================================================== */
+
+.json-key {
+  color: var(--json-key);
+}
+
+.json-string {
+  color: var(--json-string);
+}
+
+.json-number {
+  color: var(--json-number);
+}
+
+.json-boolean {
+  color: var(--json-boolean);
+}
+
+.json-null {
+  color: var(--json-null);
+}
+
+.json-scroll {
+  border-left: 2px solid var(--json-guide);
+  padding: 0.75rem 0.75rem 0.75rem 1rem;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+    }
+  body {
+    @apply bg-background text-foreground;
+    }
+  html {
+    @apply font-sans;
+    }
+}

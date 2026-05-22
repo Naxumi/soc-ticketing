@@ -1,0 +1,1898 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Dashboard SOC API",
+    "version": "0.1.0",
+    "description": "SOC Ticketing System backend API. All responses are wrapped in a {success, message?, data?, error?, meta?} envelope.\n\nAuth: use Bearer JWT access tokens in the Authorization header.\n\nNotes:\n- /api/v1/auth/register is intended for SOC_MANAGER to create L1/L2 analysts.\n- Bootstrapping the first SOC_MANAGER account is out-of-band (DB seed/manual insert)."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8080",
+      "description": "Local development"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Auth",
+      "description": "Authentication & session endpoints"
+    },
+    {
+      "name": "Tickets",
+      "description": "SOC ticket endpoints"
+    },
+    {
+      "name": "Notifications",
+      "description": "User notifications + SSE stream"
+    },
+    {
+      "name": "Dashboard",
+      "description": "Role-based dashboard aggregates"
+    },
+    {
+      "name": "Reports",
+      "description": "SOC_MANAGER reporting & exports (CSV/PDF)"
+    },
+    {
+      "name": "Webhook",
+      "description": "Inbound webhooks (API-key protected)"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      },
+      "webhookApiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Key"
+      }
+    },
+    "schemas": {
+      "Envelope": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean" },
+          "message": { "type": "string" },
+          "data": {},
+          "error": { "$ref": "#/components/schemas/ErrorDetail" },
+          "meta": { "$ref": "#/components/schemas/Meta" }
+        },
+        "required": ["success"]
+      },
+      "ErrorDetail": {
+        "type": "object",
+        "properties": {
+          "code": { "type": "string" },
+          "message": { "type": "string" },
+          "details": {
+            "type": "object",
+            "additionalProperties": { "type": "string" }
+          }
+        },
+        "required": ["code", "message"]
+      },
+      "Meta": {
+        "type": "object",
+        "properties": {
+          "page": { "type": "integer", "format": "int32" },
+          "limit": { "type": "integer", "format": "int32" },
+          "total_items": { "type": "integer", "format": "int64" },
+          "total_pages": { "type": "integer", "format": "int32" }
+        }
+      },
+
+      "UserRole": {
+        "type": "string",
+        "enum": ["L1_ANALYST", "L2_ANALYST", "SOC_MANAGER"],
+        "example": "L1_ANALYST"
+      },
+
+      "TicketSeverity": {
+        "type": "string",
+        "enum": ["low", "medium", "high", "critical"],
+        "example": "high"
+      },
+      "TicketStatus": {
+        "type": "string",
+        "enum": ["OPEN", "IN_PROGRESS", "ESCALATED", "INVESTIGATING", "FALSE_POSITIVE", "RESOLVED"],
+        "example": "OPEN"
+      },
+
+      "TicketListMetadata": {
+        "type": "object",
+        "properties": {
+          "total_data": { "type": "integer", "format": "int64" },
+          "page": { "type": "integer", "format": "int32" },
+          "total_pages": { "type": "integer", "format": "int32" }
+        },
+        "required": ["total_data", "page", "total_pages"]
+      },
+      "TicketListItem": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "example": "019b2643-25c5-7c5b-8746-b388bedc739a" },
+          "ticket_number": { "type": "string", "example": "20260423-000001" },
+          "source_ip": { "type": "string", "example": "192.168.232.140" },
+          "attack_rule_id": { "type": "string", "example": "31101" },
+          "threat_category": { "type": "string", "nullable": true, "example": "Malware" },
+          "threat_type": { "type": "string", "nullable": true, "example": "Trojan" },
+          "severity": { "$ref": "#/components/schemas/TicketSeverity", "nullable": true },
+          "status": { "$ref": "#/components/schemas/TicketStatus" },
+          "first_seen": { "type": "string", "format": "date-time" },
+          "last_seen": { "type": "string", "format": "date-time" },
+          "raw_log_count": { "type": "integer", "format": "int32", "example": 12 }
+        },
+        "required": ["id", "ticket_number", "source_ip", "attack_rule_id", "status", "first_seen", "last_seen", "raw_log_count"]
+      },
+      "ListTicketsResponse": {
+        "type": "object",
+        "properties": {
+          "metadata": { "$ref": "#/components/schemas/TicketListMetadata" },
+          "data": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/TicketListItem" }
+          }
+        },
+        "required": ["metadata", "data"]
+      },
+
+      "DashboardTimeWindow": {
+        "type": "object",
+        "properties": {
+          "from": { "type": "string", "format": "date-time" },
+          "to": { "type": "string", "format": "date-time" },
+          "range": { "type": "string", "example": "24h" }
+        },
+        "required": ["from", "to", "range"]
+      },
+      "DashboardTicketsSection": {
+        "type": "object",
+        "properties": {
+          "backlog_by_status": {
+            "type": "object",
+            "additionalProperties": { "type": "integer", "format": "int64" }
+          },
+          "backlog_by_severity": {
+            "type": "object",
+            "additionalProperties": { "type": "integer", "format": "int64" }
+          },
+          "my_by_status": {
+            "type": "object",
+            "additionalProperties": { "type": "integer", "format": "int64" }
+          },
+          "created_in_window": { "type": "integer", "format": "int64" },
+          "created_by_severity_in_window": {
+            "type": "object",
+            "additionalProperties": { "type": "integer", "format": "int64" }
+          },
+          "recent_in_window": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/TicketListItem" }
+          }
+        },
+        "required": [
+          "backlog_by_status",
+          "backlog_by_severity",
+          "my_by_status",
+          "created_in_window",
+          "created_by_severity_in_window",
+          "recent_in_window"
+        ]
+      },
+      "DashboardAssigneeWorkload": {
+        "type": "object",
+        "properties": {
+          "user_id": { "type": "string" },
+          "full_name": { "type": "string" },
+          "username": { "type": "string" },
+          "role": { "$ref": "#/components/schemas/UserRole" },
+          "active_by_status": {
+            "type": "object",
+            "additionalProperties": { "type": "integer", "format": "int64" }
+          },
+          "total_active": { "type": "integer", "format": "int64" }
+        },
+        "required": ["user_id", "full_name", "username", "role", "active_by_status", "total_active"]
+      },
+      "DashboardTeamSection": {
+        "type": "object",
+        "properties": {
+          "unassigned_active": { "type": "integer", "format": "int64" },
+          "assignees": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/DashboardAssigneeWorkload" }
+          }
+        },
+        "required": ["unassigned_active", "assignees"]
+      },
+      "DashboardL1Focus": {
+        "type": "object",
+        "properties": {
+          "unassigned_open": { "type": "integer", "format": "int64" },
+          "open_high_critical": { "type": "integer", "format": "int64" },
+          "my_in_progress": { "type": "integer", "format": "int64" }
+        },
+        "required": ["unassigned_open", "open_high_critical", "my_in_progress"]
+      },
+      "DashboardL2Focus": {
+        "type": "object",
+        "properties": {
+          "escalated": { "type": "integer", "format": "int64" },
+          "investigating": { "type": "integer", "format": "int64" },
+          "unassigned_escalated_or_investigating": { "type": "integer", "format": "int64" },
+          "my_investigating": { "type": "integer", "format": "int64" }
+        },
+        "required": ["escalated", "investigating", "unassigned_escalated_or_investigating", "my_investigating"]
+      },
+      "DashboardFocusSection": {
+        "type": "object",
+        "properties": {
+          "l1": { "$ref": "#/components/schemas/DashboardL1Focus", "nullable": true },
+          "l2": { "$ref": "#/components/schemas/DashboardL2Focus", "nullable": true }
+        }
+      },
+      "DashboardResponse": {
+        "type": "object",
+        "properties": {
+          "window": { "$ref": "#/components/schemas/DashboardTimeWindow" },
+          "role": { "$ref": "#/components/schemas/UserRole" },
+          "unread_notifications": { "type": "integer", "format": "int64" },
+          "tickets": { "$ref": "#/components/schemas/DashboardTicketsSection" },
+          "focus": { "$ref": "#/components/schemas/DashboardFocusSection", "nullable": true },
+          "team": { "$ref": "#/components/schemas/DashboardTeamSection", "nullable": true },
+          "generated_at": { "type": "string", "format": "date-time" },
+          "generated_at_unix": { "type": "integer", "format": "int64" }
+        },
+        "required": ["window", "role", "unread_notifications", "tickets", "generated_at", "generated_at_unix"]
+      },
+
+      "TicketHeader": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "example": "019b2643-25c5-7c5b-8746-b388bedc739a" },
+          "ticket_number": { "type": "string", "example": "20260423-000001" },
+          "source_ip": { "type": "string", "example": "192.168.232.140" },
+          "attack_rule_id": { "type": "string", "example": "31101" },
+          "threat_category": { "type": "string", "nullable": true },
+          "threat_type": { "type": "string", "nullable": true },
+          "severity": { "$ref": "#/components/schemas/TicketSeverity", "nullable": true },
+          "status": { "$ref": "#/components/schemas/TicketStatus" },
+          "assignee_id": { "type": "string", "nullable": true, "example": "019b2643-25c5-7c5b-8746-b388bedc739a" },
+          "first_seen": { "type": "string", "format": "date-time" },
+          "last_seen": { "type": "string", "format": "date-time" },
+          "raw_log_count": { "type": "integer", "format": "int32", "example": 12 },
+          "payload_first": {
+            "type": "object",
+            "additionalProperties": true,
+            "nullable": true,
+            "description": "Snapshot of the first raw payload in the group"
+          },
+          "payload_last": {
+            "type": "object",
+            "additionalProperties": true,
+            "nullable": true,
+            "description": "Snapshot of the last raw payload in the group"
+          },
+          "payload_sample": {
+            "type": "object",
+            "additionalProperties": true,
+            "nullable": true,
+            "description": "Representative sample payload snapshot"
+          },
+          "created_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" }
+        },
+        "required": ["id", "ticket_number", "source_ip", "attack_rule_id", "status", "first_seen", "last_seen", "raw_log_count", "created_at", "updated_at"]
+      },
+      "TicketAnalysis": {
+        "type": "object",
+        "properties": {
+          "model_name": { "type": "string", "example": "gpt-4o-mini" },
+          "summary": { "type": "string", "nullable": true },
+          "detailed_analysis": { "type": "string", "nullable": true },
+          "attack_vector": { "type": "string", "nullable": true },
+          "potential_impact": { "type": "string", "nullable": true },
+          "confidence_score": { "type": "number", "format": "double", "nullable": true },
+          "processing_time_ms": { "type": "number", "format": "double", "nullable": true },
+          "created_at": { "type": "string", "format": "date-time" }
+        },
+        "required": ["model_name", "created_at"]
+      },
+      "TicketRecommendation": {
+        "type": "object",
+        "properties": {
+          "priority": { "type": "integer", "format": "int32", "example": 1 },
+          "action": { "type": "string", "example": "Block suspicious IP" },
+          "reason": { "type": "string", "nullable": true }
+        },
+        "required": ["priority", "action"]
+      },
+      "TicketIOC": {
+        "type": "object",
+        "properties": {
+          "ioc_type": { "type": "string", "example": "ip" },
+          "ioc_value": { "type": "string", "example": "203.0.113.10" }
+        },
+        "required": ["ioc_type", "ioc_value"]
+      },
+      "TicketAuditLog": {
+        "type": "object",
+        "properties": {
+          "action": { "type": "string", "example": "STATUS_UPDATED" },
+          "note": { "type": "string", "nullable": true },
+          "created_at": { "type": "string", "format": "date-time" }
+        },
+        "required": ["action", "created_at"]
+      },
+      "TicketRawLogItem": {
+        "type": "object",
+        "properties": {
+          "wazuh_event_id": { "type": "string", "nullable": true, "example": "100002" },
+          "source_ip": { "type": "string", "example": "192.168.232.140" },
+          "attack_rule_id": { "type": "string", "example": "31101" },
+          "event_timestamp": { "type": "string", "format": "date-time" },
+          "raw_payload": { "type": "object", "additionalProperties": true },
+          "created_at": { "type": "string", "format": "date-time" }
+        },
+        "required": ["source_ip", "attack_rule_id", "event_timestamp", "raw_payload", "created_at"]
+      },
+      "TicketDetailResponse": {
+        "type": "object",
+        "properties": {
+          "ticket": { "$ref": "#/components/schemas/TicketHeader" },
+          "analysis": { "$ref": "#/components/schemas/TicketAnalysis", "nullable": true },
+          "recommendations": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/TicketRecommendation" }
+          },
+          "iocs": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/TicketIOC" }
+          },
+          "audit_logs": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/TicketAuditLog" }
+          },
+          "raw_logs": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/TicketRawLogItem" }
+          }
+        },
+        "required": ["ticket", "recommendations", "iocs", "audit_logs", "raw_logs"]
+      },
+
+      "UpdateTicketStatusRequest": {
+        "type": "object",
+        "properties": {
+          "status": { "$ref": "#/components/schemas/TicketStatus" },
+          "assignee_id": { "type": "string", "nullable": true, "example": "019b2643-25c5-7c5b-8746-b388bedc739a" },
+          "note": { "type": "string", "example": "Investigating suspicious traffic" }
+        },
+        "required": ["status", "note"]
+      },
+
+      "AnalyzeTicketRequest": {
+        "type": "object",
+        "properties": {
+          "note": { "type": "string", "nullable": true, "example": "Trigger external analysis for triage" },
+          "model_name": { "type": "string", "nullable": true, "example": "llama-3.3-70b-versatile" },
+          "response_language": { "type": "string", "enum": ["id", "en"], "nullable": true, "example": "id" }
+        }
+      },
+      "AnalyzeTicketResponse": {
+        "type": "object",
+        "properties": {
+          "forwarded_to": { "type": "string", "example": "http://ai-engine:8000/api/v1/analyze/go" },
+          "status_code": { "type": "integer", "format": "int32", "example": 200 },
+          "engine_status": { "type": "string", "example": "success" },
+          "request_id": { "type": "string", "nullable": true, "example": "a1b2c3d4-e5f6-7890-abcd-ef1234567890" },
+          "saved": { "type": "boolean", "example": true },
+          "response": { "type": "object", "additionalProperties": true, "nullable": true }
+        },
+        "required": ["forwarded_to", "status_code", "saved"]
+      },
+
+      "WazuhWebhookMetadata": {
+        "type": "object",
+        "properties": {
+          "timestamp": { "type": "string", "format": "date-time" },
+          "total_alerts": { "type": "integer", "format": "int32", "example": 1 }
+        },
+        "required": ["timestamp", "total_alerts"]
+      },
+      "WazuhWebhookMitreAttack": {
+        "type": "object",
+        "properties": {
+          "technique_id": { "type": "string", "example": "T1190" }
+        },
+        "required": ["technique_id"]
+      },
+      "WazuhWebhookRecommendedAction": {
+        "type": "object",
+        "properties": {
+          "priority": { "type": "integer", "format": "int32", "example": 1 },
+          "action": { "type": "string", "example": "Block the IP address 192.168.232.140" },
+          "reason": { "type": "string", "nullable": true }
+        },
+        "required": ["priority", "action"]
+      },
+      "WazuhLLMModelResult": {
+        "type": "object",
+        "properties": {
+          "summary": { "type": "string", "nullable": true },
+          "detailed_analysis": { "type": "string", "nullable": true },
+          "attack_vector": { "type": "string", "nullable": true },
+          "potential_impact": { "type": "string", "nullable": true },
+          "mitre_attacks": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/WazuhWebhookMitreAttack" }
+          },
+          "recommended_actions": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/WazuhWebhookRecommendedAction" }
+          }
+        }
+      },
+      "WazuhWebhookResult": {
+        "type": "object",
+        "properties": {
+          "alert_id": { "type": "string", "example": "100002" },
+          "alert_description": { "type": "string", "example": "SQL injection attempt." },
+          "alert_level": { "type": "integer", "format": "int32", "example": 7 },
+          "threat_category": { "type": "string", "example": "Web Attack" },
+          "threat_type": { "type": "string", "example": "SQL Injection" },
+          "severity": { "$ref": "#/components/schemas/TicketSeverity" },
+          "timestamp": { "type": "string", "format": "date-time" },
+          "detailed_results": {
+            "type": "object",
+            "additionalProperties": { "$ref": "#/components/schemas/WazuhLLMModelResult" },
+            "description": "Map of model_name -> model result"
+          },
+          "indicators": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Key/value indicators that will be stored into ticket_iocs"
+          },
+          "raw_log": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Raw log payload stored into ticket_raw_logs.raw_payload"
+          }
+        },
+        "required": ["alert_id", "threat_category", "threat_type", "severity", "timestamp"]
+      },
+      "WazuhWebhookRequest": {
+        "type": "object",
+        "properties": {
+          "metadata": { "$ref": "#/components/schemas/WazuhWebhookMetadata" },
+          "results": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/WazuhWebhookResult" }
+          }
+        },
+        "required": ["metadata", "results"]
+      },
+      "WazuhIngestResponse": {
+        "type": "object",
+        "properties": {
+          "created_or_updated_tickets": { "type": "integer", "format": "int32", "example": 1 },
+          "ticket_ids": {
+            "type": "array",
+            "items": { "type": "string", "format": "uuid" }
+          }
+        },
+        "required": ["created_or_updated_tickets", "ticket_ids"]
+      },
+
+      "WazuhRawLogEnvelope": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "example": "100002" },
+          "customer": { "type": "string", "example": "default" },
+          "source_ip": { "type": "string", "example": "192.168.232.140" },
+          "raw_log": { "type": "object", "additionalProperties": true },
+          "received_at": { "type": "string", "format": "date-time", "nullable": true }
+        },
+        "required": ["id", "customer", "source_ip", "raw_log"]
+      },
+      "WazuhRawLogBatchRequest": {
+        "type": "array",
+        "items": { "$ref": "#/components/schemas/WazuhRawLogEnvelope" }
+      },
+      "RawLogIngestResponse": {
+        "type": "object",
+        "properties": {
+          "processed_logs": { "type": "integer", "format": "int32", "example": 10 },
+          "created_tickets": { "type": "integer", "format": "int32", "example": 1 },
+          "created_ticket_ids": {
+            "type": "array",
+            "items": { "type": "string", "format": "uuid" }
+          },
+          "active_grouping_keys": { "type": "integer", "format": "int32", "example": 2 }
+        },
+        "required": ["processed_logs", "created_tickets", "created_ticket_ids", "active_grouping_keys"]
+      },
+
+      "NotificationListMetadata": {
+        "type": "object",
+        "properties": {
+          "total_data": { "type": "integer", "format": "int64" },
+          "page": { "type": "integer", "format": "int32" },
+          "total_pages": { "type": "integer", "format": "int32" }
+        },
+        "required": ["total_data", "page", "total_pages"]
+      },
+      "NotificationListItem": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "ticket_id": { "type": "string", "format": "uuid" },
+          "message": { "type": "string" },
+          "is_read": { "type": "boolean" },
+          "created_at": { "type": "string", "format": "date-time" }
+        },
+        "required": ["id", "ticket_id", "message", "is_read", "created_at"]
+      },
+      "ListNotificationsResponse": {
+        "type": "object",
+        "properties": {
+          "metadata": { "$ref": "#/components/schemas/NotificationListMetadata" },
+          "data": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/NotificationListItem" }
+          }
+        },
+        "required": ["metadata", "data"]
+      },
+
+      "LoginRequest": {
+        "type": "object",
+        "properties": {
+          "username": { "type": "string", "example": "alice" },
+          "password": { "type": "string", "example": "password123" }
+        },
+        "required": ["username", "password"]
+      },
+      "RefreshTokenRequest": {
+        "type": "object",
+        "properties": {
+          "refresh_token": { "type": "string", "example": "r3fr3sh_t0k3n" }
+        },
+        "required": ["refresh_token"]
+      },
+      "ChangePasswordRequest": {
+        "type": "object",
+        "properties": {
+          "old_password": { "type": "string", "example": "password123" },
+          "new_password": { "type": "string", "example": "newPassword123" }
+        },
+        "required": ["old_password", "new_password"]
+      },
+      "AdminUpdateAnalystRequest": {
+        "type": "object",
+        "description": "SOC_MANAGER-only. Update an existing L1/L2 analyst. At least one field must be provided.",
+        "minProperties": 1,
+        "properties": {
+          "full_name": { "type": "string", "example": "Updated Analyst" },
+          "username": { "type": "string", "example": "updated_analyst" },
+          "role": { "type": "string", "enum": ["L1_ANALYST", "L2_ANALYST"], "example": "L2_ANALYST" },
+          "password": { "type": "string", "example": "newPassword123" }
+        }
+      },
+      "RevokeUserSessionsRequest": {
+        "type": "object",
+        "description": "Optional payload. Omit session_id to revoke all active sessions, or provide session_id to revoke one active session.",
+        "properties": {
+          "session_id": { "type": "string", "format": "uuid", "example": "019b2643-25c5-7c5b-8746-b388bedc739a" }
+        }
+      },
+      "RevokeUserSessionsResponse": {
+        "type": "object",
+        "properties": {
+          "scope": { "type": "string", "enum": ["all", "single"], "example": "all" },
+          "session_id": { "type": "string", "format": "uuid", "nullable": true },
+          "revoked_count": { "type": "integer", "format": "int64", "example": 2 }
+        },
+        "required": ["scope", "revoked_count"]
+      },
+      "TokenResponse": {
+        "type": "object",
+        "properties": {
+          "access_token": { "type": "string" },
+          "access_token_expires_in": { "type": "integer", "format": "int64" },
+          "refresh_token": { "type": "string" },
+          "refresh_token_expires_in": { "type": "integer", "format": "int64" }
+        },
+        "required": [
+          "access_token",
+          "access_token_expires_in",
+          "refresh_token",
+          "refresh_token_expires_in"
+        ]
+      },
+
+      "RegisterRequest": {
+        "type": "object",
+        "properties": {
+          "full_name": { "type": "string", "example": "Alice Johnson" },
+          "username": { "type": "string", "example": "alice" },
+          "password": { "type": "string", "example": "password123" },
+          "role": {
+            "type": "string",
+            "enum": ["L1_ANALYST", "L2_ANALYST"],
+            "example": "L1_ANALYST"
+          }
+        },
+        "required": ["full_name", "username", "password", "role"]
+      },
+      "RegisterResponse": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "example": "019b2643-25c5-7c5b-8746-b388bedc739a" },
+          "full_name": { "type": "string" },
+          "username": { "type": "string" },
+          "role": { "type": "string", "enum": ["L1_ANALYST", "L2_ANALYST", "SOC_MANAGER"] },
+          "created_at": { "type": "string", "format": "date-time" }
+        },
+        "required": ["id", "full_name", "username", "role", "created_at"]
+      },
+
+      "UserListItem": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "full_name": { "type": "string", "example": "Rizky Pratama" },
+          "username": { "type": "string", "example": "rizky.pratama" },
+          "role": { "$ref": "#/components/schemas/UserRole" },
+          "created_at": { "type": "string", "format": "date-time" }
+        },
+        "required": ["id", "full_name", "username", "role", "created_at"]
+      },
+      "UserDetail": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "full_name": { "type": "string", "example": "Rizky Pratama" },
+          "username": { "type": "string", "example": "rizky.pratama" },
+          "role": { "$ref": "#/components/schemas/UserRole" },
+          "created_at": { "type": "string", "format": "date-time" }
+        },
+        "required": ["id", "full_name", "username", "role", "created_at"]
+      },
+      "UserSessionItem": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "user_agent": { "type": "string", "nullable": true },
+          "ip_address": { "type": "string", "nullable": true },
+          "is_revoked": { "type": "boolean" },
+          "expires_at": { "type": "string", "format": "date-time" },
+          "created_at": { "type": "string", "format": "date-time" }
+        },
+        "required": ["id", "is_revoked", "expires_at", "created_at"]
+      },
+      "UserTicketLogItem": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "ticket_id": { "type": "string", "format": "uuid" },
+          "ticket_number": { "type": "string", "example": "20260423-000001" },
+          "source_ip": { "type": "string", "example": "192.168.232.140" },
+          "threat_category": { "type": "string", "nullable": true },
+          "threat_type": { "type": "string", "nullable": true },
+          "severity": { "$ref": "#/components/schemas/TicketSeverity", "nullable": true },
+          "first_seen": { "type": "string", "format": "date-time" },
+          "last_seen": { "type": "string", "format": "date-time" },
+          "action": { "type": "string", "example": "STATUS_UPDATED" },
+          "note": { "type": "string", "nullable": true },
+          "created_at": { "type": "string", "format": "date-time" }
+        },
+        "required": ["id", "ticket_id", "ticket_number", "source_ip", "first_seen", "last_seen", "action", "created_at"]
+      },
+      "UserDetailResponse": {
+        "type": "object",
+        "properties": {
+          "user": { "$ref": "#/components/schemas/UserDetail" },
+          "sessions": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/UserSessionItem" }
+          },
+          "ticket_logs": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/UserTicketLogItem" }
+          }
+        },
+        "required": ["user", "sessions", "ticket_logs"]
+      },
+
+      "MeResponse": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "full_name": { "type": "string" },
+          "username": { "type": "string" },
+          "role": { "type": "string" },
+          "created_at": { "type": "string", "format": "date-time" }
+        },
+        "required": ["id", "full_name", "username", "role", "created_at"]
+      },
+
+      "SuccessTokenEnvelope": {
+        "allOf": [
+          { "$ref": "#/components/schemas/Envelope" },
+          {
+            "type": "object",
+            "properties": {
+              "success": { "type": "boolean", "example": true },
+              "data": { "$ref": "#/components/schemas/TokenResponse" }
+            }
+          }
+        ]
+      },
+      "SuccessMeEnvelope": {
+        "allOf": [
+          { "$ref": "#/components/schemas/Envelope" },
+          {
+            "type": "object",
+            "properties": {
+              "success": { "type": "boolean", "example": true },
+              "data": { "$ref": "#/components/schemas/MeResponse" }
+            }
+          }
+        ]
+      },
+      "SuccessRegisterEnvelope": {
+        "allOf": [
+          { "$ref": "#/components/schemas/Envelope" },
+          {
+            "type": "object",
+            "properties": {
+              "success": { "type": "boolean", "example": true },
+              "message": { "type": "string", "example": "User created" },
+              "data": { "$ref": "#/components/schemas/RegisterResponse" }
+            }
+          }
+        ]
+      },
+      "SuccessUsersListEnvelope": {
+        "allOf": [
+          { "$ref": "#/components/schemas/Envelope" },
+          {
+            "type": "object",
+            "properties": {
+              "success": { "type": "boolean", "example": true },
+              "data": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/UserListItem" }
+              }
+            }
+          }
+        ]
+      },
+      "SuccessUserDetailEnvelope": {
+        "allOf": [
+          { "$ref": "#/components/schemas/Envelope" },
+          {
+            "type": "object",
+            "properties": {
+              "success": { "type": "boolean", "example": true },
+              "data": { "$ref": "#/components/schemas/UserDetailResponse" }
+            }
+          }
+        ]
+      },
+      "SuccessRevokeUserSessionsEnvelope": {
+        "allOf": [
+          { "$ref": "#/components/schemas/Envelope" },
+          {
+            "type": "object",
+            "properties": {
+              "success": { "type": "boolean", "example": true },
+              "message": { "type": "string", "example": "All active sessions revoked" },
+              "data": { "$ref": "#/components/schemas/RevokeUserSessionsResponse" }
+            }
+          }
+        ]
+      },
+      "SuccessMessageEnvelope": {
+        "allOf": [
+          { "$ref": "#/components/schemas/Envelope" },
+          {
+            "type": "object",
+            "properties": {
+              "success": { "type": "boolean", "example": true },
+              "message": { "type": "string", "example": "Logged out" },
+              "data": { "nullable": true }
+            }
+          }
+        ]
+      },
+
+      "SuccessAnalyzeTicketEnvelope": {
+        "allOf": [
+          { "$ref": "#/components/schemas/Envelope" },
+          {
+            "type": "object",
+            "properties": {
+              "success": { "type": "boolean", "example": true },
+              "message": { "type": "string", "example": "Analisis external berhasil dipicu." },
+              "data": { "$ref": "#/components/schemas/AnalyzeTicketResponse" }
+            }
+          }
+        ]
+      },
+
+      "SuccessTicketsListEnvelope": {
+        "allOf": [
+          { "$ref": "#/components/schemas/Envelope" },
+          {
+            "type": "object",
+            "properties": {
+              "success": { "type": "boolean", "example": true },
+              "data": { "$ref": "#/components/schemas/ListTicketsResponse" }
+            }
+          }
+        ]
+      },
+      "SuccessTicketDetailEnvelope": {
+        "allOf": [
+          { "$ref": "#/components/schemas/Envelope" },
+          {
+            "type": "object",
+            "properties": {
+              "success": { "type": "boolean", "example": true },
+              "data": { "$ref": "#/components/schemas/TicketDetailResponse" }
+            }
+          }
+        ]
+      },
+      "SuccessTicketStatusUpdatedEnvelope": {
+        "allOf": [
+          { "$ref": "#/components/schemas/Envelope" },
+          {
+            "type": "object",
+            "properties": {
+              "success": { "type": "boolean", "example": true },
+              "message": { "type": "string", "example": "Status tiket berhasil diubah dan log tersimpan." },
+              "data": { "nullable": true }
+            }
+          }
+        ]
+      },
+      "SuccessNotificationsListEnvelope": {
+        "allOf": [
+          { "$ref": "#/components/schemas/Envelope" },
+          {
+            "type": "object",
+            "properties": {
+              "success": { "type": "boolean", "example": true },
+              "data": { "$ref": "#/components/schemas/ListNotificationsResponse" }
+            }
+          }
+        ]
+      },
+      "SuccessNotificationReadEnvelope": {
+        "allOf": [
+          { "$ref": "#/components/schemas/Envelope" },
+          {
+            "type": "object",
+            "properties": {
+              "success": { "type": "boolean", "example": true },
+              "message": { "type": "string", "example": "Notification marked as read" },
+              "data": { "nullable": true }
+            }
+          }
+        ]
+      },
+
+      "SuccessDashboardEnvelope": {
+        "allOf": [
+          { "$ref": "#/components/schemas/Envelope" },
+          {
+            "type": "object",
+            "properties": {
+              "success": { "type": "boolean", "example": true },
+              "data": { "$ref": "#/components/schemas/DashboardResponse" }
+            }
+          }
+        ]
+      },
+      "CreatedWazuhIngestEnvelope": {
+        "allOf": [
+          { "$ref": "#/components/schemas/Envelope" },
+          {
+            "type": "object",
+            "properties": {
+              "success": { "type": "boolean", "example": true },
+              "message": { "type": "string", "example": "Webhook processed" },
+              "data": { "$ref": "#/components/schemas/WazuhIngestResponse" }
+            }
+          }
+        ]
+      },
+
+      "CreatedWazuhRawLogsIngestEnvelope": {
+        "allOf": [
+          { "$ref": "#/components/schemas/Envelope" },
+          {
+            "type": "object",
+            "properties": {
+              "success": { "type": "boolean", "example": true },
+              "message": { "type": "string", "example": "Raw logs ingested" },
+              "data": { "$ref": "#/components/schemas/RawLogIngestResponse" }
+            }
+          }
+        ]
+      },
+      "ErrorEnvelope": {
+        "allOf": [
+          { "$ref": "#/components/schemas/Envelope" },
+          {
+            "type": "object",
+            "properties": {
+              "success": { "type": "boolean", "example": false },
+              "error": { "$ref": "#/components/schemas/ErrorDetail" }
+            }
+          }
+        ]
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "Bad request",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorEnvelope" },
+            "examples": {
+              "badRequest": {
+                "value": {
+                  "success": false,
+                  "error": { "code": "BAD_REQUEST", "message": "Invalid JSON body" }
+                }
+              }
+            }
+          }
+        }
+      },
+      "ValidationError": {
+        "description": "Validation error",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorEnvelope" },
+            "examples": {
+              "validation": {
+                "value": {
+                  "success": false,
+                  "error": {
+                    "code": "VALIDATION_ERROR",
+                    "message": "Validation failed",
+                    "details": { "username": "username is required" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "Unauthorized",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorEnvelope" },
+            "examples": {
+              "unauthorized": {
+                "value": {
+                  "success": false,
+                  "error": { "code": "UNAUTHORIZED", "message": "Invalid token" }
+                }
+              }
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "Forbidden",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorEnvelope" },
+            "examples": {
+              "forbidden": {
+                "value": {
+                  "success": false,
+                  "error": { "code": "FORBIDDEN", "message": "soc manager access required" }
+                }
+              }
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "Not found",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorEnvelope" },
+            "examples": {
+              "notFound": {
+                "value": {
+                  "success": false,
+                  "error": { "code": "NOT_FOUND", "message": "ticket not found" }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/api/v1/dashboard": {
+      "get": {
+        "tags": ["Dashboard"],
+        "summary": "Dashboard aggregates",
+        "description": "Return role-based dashboard aggregates for the authenticated user. Use either range (e.g. 24h, 7d) or from/to (RFC3339) to define the activity window.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "range",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "example": "24h" },
+            "description": "Activity window duration (supports Go duration like 24h or day shorthand like 7d). Ignored if from/to are provided. Default: 24h."
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "format": "date-time" },
+            "description": "Window start (RFC3339). Must be provided together with to."
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "format": "date-time" },
+            "description": "Window end (RFC3339). Must be provided together with from."
+          },
+          {
+            "name": "recent_limit",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "format": "int32", "example": 10 },
+            "description": "Maximum number of recent tickets returned (1-50). Default: 10."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessDashboardEnvelope" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "422": { "$ref": "#/components/responses/ValidationError" },
+          "500": { "$ref": "#/components/responses/BadRequest" }
+        }
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Login",
+        "description": "Authenticate with username/password and receive access + refresh tokens.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/LoginRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessTokenEnvelope" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "422": { "$ref": "#/components/responses/ValidationError" },
+          "500": { "$ref": "#/components/responses/BadRequest" }
+        }
+      }
+    },
+    "/api/v1/auth/refresh": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Refresh access token",
+        "description": "Exchange a valid refresh token for a new access token and new refresh token.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/RefreshTokenRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessTokenEnvelope" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "422": { "$ref": "#/components/responses/ValidationError" },
+          "500": { "$ref": "#/components/responses/BadRequest" }
+        }
+      }
+    },
+    "/api/v1/auth/logout": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Logout",
+        "description": "Revoke a refresh token (server-side).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/RefreshTokenRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessMessageEnvelope" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "422": { "$ref": "#/components/responses/ValidationError" },
+          "500": { "$ref": "#/components/responses/BadRequest" }
+        }
+      }
+    },
+    "/api/v1/auth/me": {
+      "get": {
+        "tags": ["Auth"],
+        "summary": "Get current user",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessMeEnvelope" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/BadRequest" },
+          "500": { "$ref": "#/components/responses/BadRequest" }
+        }
+      }
+    },
+    "/api/v1/auth/change-password": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Change password",
+        "description": "Change the current user's password. Revokes all refresh tokens after a successful change.",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ChangePasswordRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessMessageEnvelope" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "422": { "$ref": "#/components/responses/ValidationError" },
+          "500": { "$ref": "#/components/responses/BadRequest" }
+        }
+      }
+    },
+    "/api/v1/auth/users/{id}": {
+      "patch": {
+        "tags": ["Auth"],
+        "summary": "Admin update analyst user",
+        "description": "SOC_MANAGER-only. Update an analyst (L1/L2) user's full_name, username, role, and/or password.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AdminUpdateAnalystRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessMessageEnvelope" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "409": { "$ref": "#/components/responses/BadRequest" },
+          "422": { "$ref": "#/components/responses/ValidationError" },
+          "500": { "$ref": "#/components/responses/BadRequest" }
+        }
+      }
+    },
+    "/api/v1/auth/register": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Register a new analyst user",
+        "description": "SOC_MANAGER-only endpoint to create L1/L2 analyst accounts.",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/RegisterRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessRegisterEnvelope" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "409": { "$ref": "#/components/responses/BadRequest" },
+          "422": { "$ref": "#/components/responses/ValidationError" },
+          "500": { "$ref": "#/components/responses/BadRequest" }
+        }
+      }
+    },
+    "/api/v1/users": {
+      "get": {
+        "tags": ["Auth"],
+        "summary": "List users",
+        "description": "SOC_MANAGER-only. List users for administration.",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessUsersListEnvelope" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "500": { "$ref": "#/components/responses/BadRequest" }
+        }
+      }
+    },
+    "/api/v1/users/{id}": {
+      "get": {
+        "tags": ["Auth"],
+        "summary": "Get user detail",
+        "description": "SOC_MANAGER-only. Return user detail including sessions and ticket logs.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessUserDetailEnvelope" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/BadRequest" }
+        }
+      },
+      "delete": {
+        "tags": ["Auth"],
+        "summary": "Delete analyst account",
+        "description": "SOC_MANAGER-only. Delete an existing L1/L2 analyst account.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessMessageEnvelope" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/BadRequest" }
+        }
+      }
+    },
+    "/api/v1/users/{id}/sessions/revoke": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Revoke user sessions (all or single)",
+        "description": "SOC_MANAGER-only. Revoke refresh sessions of a target user. Omit session_id to revoke all active sessions, or provide session_id to revoke one active session.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/RevokeUserSessionsRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessRevokeUserSessionsEnvelope" },
+                "examples": {
+                  "revokeAllSuccess": {
+                    "value": {
+                      "success": true,
+                      "message": "All active sessions revoked",
+                      "data": {
+                        "scope": "all",
+                        "revoked_count": 2
+                      }
+                    }
+                  },
+                  "revokeAllNoChanges": {
+                    "value": {
+                      "success": true,
+                      "message": "No active sessions were revoked",
+                      "data": {
+                        "scope": "all",
+                        "revoked_count": 0
+                      }
+                    }
+                  },
+                  "revokeSingleSuccess": {
+                    "value": {
+                      "success": true,
+                      "message": "Session revoked",
+                      "data": {
+                        "scope": "single",
+                        "session_id": "019b2643-25c5-7c5b-8746-b388bedc739a",
+                        "revoked_count": 1
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/BadRequest" }
+        }
+      }
+    },
+    "/api/v1/tickets": {
+      "get": {
+        "tags": ["Tickets"],
+        "summary": "List tickets",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "format": "int32", "default": 1, "minimum": 1 }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "format": "int32", "default": 10, "minimum": 1, "maximum": 100 }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": { "$ref": "#/components/schemas/TicketStatus" }
+          },
+          {
+            "name": "severity",
+            "in": "query",
+            "required": false,
+            "schema": { "$ref": "#/components/schemas/TicketSeverity" }
+          },
+          {
+            "name": "assignee_id",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessTicketsListEnvelope" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "422": { "$ref": "#/components/responses/ValidationError" },
+          "500": { "$ref": "#/components/responses/BadRequest" }
+        }
+      }
+    },
+    "/api/v1/tickets/{id}": {
+      "get": {
+        "tags": ["Tickets"],
+        "summary": "Get ticket detail",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessTicketDetailEnvelope" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/BadRequest" }
+        }
+      }
+    },
+    "/api/v1/tickets/{id}/status": {
+      "patch": {
+        "tags": ["Tickets"],
+        "summary": "Update ticket status",
+        "description": "Update ticket status and persist a ticket log note.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UpdateTicketStatusRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessTicketStatusUpdatedEnvelope" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "422": { "$ref": "#/components/responses/ValidationError" },
+          "500": { "$ref": "#/components/responses/BadRequest" }
+        }
+      }
+    },
+    "/api/v1/tickets/{id}/analyze": {
+      "post": {
+        "tags": ["Tickets"],
+        "summary": "Trigger external analysis",
+        "description": "Triggers external AI analysis for a ticket using /api/v1/analyze/go contract, stores parsed analysis output to database, and records an audit log note.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AnalyzeTicketRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessAnalyzeTicketEnvelope" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "422": { "$ref": "#/components/responses/ValidationError" },
+          "500": { "$ref": "#/components/responses/BadRequest" }
+        }
+      }
+    },
+    "/api/v1/notifications": {
+      "get": {
+        "tags": ["Notifications"],
+        "summary": "List notifications",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "format": "int32", "default": 1, "minimum": 1 }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "format": "int32", "default": 10, "minimum": 1, "maximum": 100 }
+          },
+          {
+            "name": "is_read",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "boolean" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessNotificationsListEnvelope" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "422": { "$ref": "#/components/responses/ValidationError" },
+          "500": { "$ref": "#/components/responses/BadRequest" }
+        }
+      }
+    },
+    "/api/v1/notifications/{id}/read": {
+      "patch": {
+        "tags": ["Notifications"],
+        "summary": "Mark notification as read",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessNotificationReadEnvelope" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/BadRequest" }
+        }
+      }
+    },
+    "/api/v1/notifications/stream": {
+      "get": {
+        "tags": ["Notifications"],
+        "summary": "Notifications SSE stream",
+        "description": "Server-Sent Events stream. Emits 'notification' events with NotificationListItem JSON payload, and periodic 'ping' events.",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/event-stream": {
+                "schema": { "type": "string" },
+                "examples": {
+                  "example": {
+                    "value": "event: notification\ndata: {\"id\":\"...\",\"ticket_id\":\"...\",\"message\":\"New ticket...\",\"is_read\":false,\"created_at\":\"2026-03-04T18:24:22Z\"}\n\n"
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/api/v1/reports/tickets.csv": {
+      "get": {
+        "tags": ["Reports"],
+        "summary": "Export tickets (CSV)",
+        "description": "SOC_MANAGER-only export. Exports tickets in a time window including audit logs, IOCs, analysis, recommendations, and raw payload (nested fields are serialized as JSON columns).",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "range",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "example": "7d" },
+            "description": "Window duration (e.g. 24h, 7d). Ignored if from/to are provided. Default: 7d."
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "format": "date-time" },
+            "description": "Window start (RFC3339). Must be provided together with to."
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "format": "date-time" },
+            "description": "Window end (RFC3339). Must be provided together with from."
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": { "$ref": "#/components/schemas/TicketStatus" }
+          },
+          {
+            "name": "severity",
+            "in": "query",
+            "required": false,
+            "schema": { "$ref": "#/components/schemas/TicketSeverity" }
+          },
+          {
+            "name": "assignee_id",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "format": "uuid" }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "format": "int32", "default": 1000, "minimum": 1, "maximum": 10000 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "CSV file",
+            "content": {
+              "text/csv": {
+                "schema": { "type": "string" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "422": { "$ref": "#/components/responses/ValidationError" },
+          "500": { "$ref": "#/components/responses/BadRequest" }
+        }
+      }
+    },
+    "/api/v1/reports/tickets.pdf": {
+      "get": {
+        "tags": ["Reports"],
+        "summary": "Export tickets (PDF)",
+        "description": "SOC_MANAGER-only export. Generates a PDF report for tickets in a time window.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "range",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "example": "7d" },
+            "description": "Window duration (e.g. 24h, 7d). Ignored if from/to are provided. Default: 7d."
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "format": "date-time" },
+            "description": "Window start (RFC3339). Must be provided together with to."
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "format": "date-time" },
+            "description": "Window end (RFC3339). Must be provided together with from."
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": { "$ref": "#/components/schemas/TicketStatus" }
+          },
+          {
+            "name": "severity",
+            "in": "query",
+            "required": false,
+            "schema": { "$ref": "#/components/schemas/TicketSeverity" }
+          },
+          {
+            "name": "assignee_id",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "format": "uuid" }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "format": "int32", "default": 1000, "minimum": 1, "maximum": 10000 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "PDF file",
+            "content": {
+              "application/pdf": {
+                "schema": { "type": "string", "format": "binary" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "422": { "$ref": "#/components/responses/ValidationError" },
+          "500": { "$ref": "#/components/responses/BadRequest" }
+        }
+      }
+    },
+    "/api/v1/webhook/wazuh": {
+      "post": {
+        "tags": ["Webhook"],
+        "summary": "Ingest Wazuh + LLM analysis",
+        "description": "API-key protected endpoint used by the Wazuh/LLM pipeline to create/update tickets, store raw logs, analysis, recommendations, IOCs, and create notifications for all users.",
+        "security": [{ "webhookApiKey": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/WazuhWebhookRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CreatedWazuhIngestEnvelope" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "422": { "$ref": "#/components/responses/ValidationError" },
+          "500": { "$ref": "#/components/responses/BadRequest" }
+        }
+      }
+    },
+    "/api/v1/webhook/wazuh/raw-logs": {
+      "post": {
+        "tags": ["Webhook"],
+        "summary": "Ingest Wazuh raw logs (batch)",
+        "description": "API-key protected batch endpoint to ingest raw logs and group them into tickets by time window.",
+        "security": [{ "webhookApiKey": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/WazuhRawLogBatchRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CreatedWazuhRawLogsIngestEnvelope" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "422": { "$ref": "#/components/responses/ValidationError" },
+          "500": { "$ref": "#/components/responses/BadRequest" }
+        }
+      }
+    }
+  }
+}

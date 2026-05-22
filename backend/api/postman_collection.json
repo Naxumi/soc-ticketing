@@ -1,0 +1,594 @@
+{
+  "info": {
+    "_postman_id": "b3c1b1c8-9b8f-4c28-ae8d-b0b1a2dfad3d",
+    "name": "Dashboard SOC API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Postman collection for the Dashboard SOC backend.\n\nVariables:\n- baseUrl: API base URL\n- accessToken: JWT access token\n- refreshToken: refresh token"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "accessToken", "value": "" },
+    { "key": "refreshToken", "value": "" },
+    { "key": "userId", "value": "" },
+    { "key": "sessionId", "value": "" },
+    { "key": "ticketId", "value": "" },
+    { "key": "notificationId", "value": "" },
+    { "key": "webhookApiKey", "value": "" },
+    { "key": "groupSourceIp", "value": "192.168.232.140" },
+    { "key": "groupRuleId", "value": "31101" },
+    { "key": "groupCustomer", "value": "default" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "login"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"rizky.pratama\",\n  \"password\": \"SocManager@123\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res && res.success && res.data) {",
+                  "  if (res.data.access_token) pm.collectionVariables.set('accessToken', res.data.access_token);",
+                  "  if (res.data.refresh_token) pm.collectionVariables.set('refreshToken', res.data.refresh_token);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Me",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "me"]
+            }
+          }
+        },
+        {
+          "name": "Refresh",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/refresh",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "refresh"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh_token\": \"{{refreshToken}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res && res.success && res.data) {",
+                  "  if (res.data.access_token) pm.collectionVariables.set('accessToken', res.data.access_token);",
+                  "  if (res.data.refresh_token) pm.collectionVariables.set('refreshToken', res.data.refresh_token);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "logout"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh_token\": \"{{refreshToken}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let res = null;",
+                  "try { res = pm.response.json(); } catch (e) {}",
+                  "if (res && res.success) {",
+                  "  pm.collectionVariables.unset('accessToken');",
+                  "  pm.collectionVariables.unset('refreshToken');",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Change Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/change-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "change-password"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"old_password\": \"password123\",\n  \"new_password\": \"newPassword123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Admin Update Analyst (SOC_MANAGER only)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/users/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "users", "{{userId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"full_name\": \"Updated Analyst\",\n  \"username\": \"updated_analyst\",\n  \"role\": \"L2_ANALYST\",\n  \"password\": \"newPassword123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Register (SOC_MANAGER only)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "register"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"full_name\": \"New Analyst\",\n  \"username\": \"new_analyst\",\n  \"password\": \"password123\",\n  \"role\": \"L1_ANALYST\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Tickets",
+      "item": [
+        {
+          "name": "List Tickets",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tickets?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "tickets"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Ticket Detail",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tickets/{{ticketId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "tickets", "{{ticketId}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Ticket Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tickets/{{ticketId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "tickets", "{{ticketId}}", "status"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"IN_PROGRESS\",\n  \"assignee_id\": null,\n  \"note\": \"Start investigating\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Analyze Ticket (External)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tickets/{{ticketId}}/analyze",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "tickets", "{{ticketId}}", "analyze"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"note\": \"Trigger external analysis for triage\",\n  \"model_name\": \"llama-3.3-70b-versatile\",\n  \"response_language\": \"id\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users (SOC_MANAGER only)",
+      "item": [
+        {
+          "name": "List Users",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "users"]
+            }
+          }
+        },
+        {
+          "name": "Get User Detail (Sessions + Ticket Logs)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "users", "{{userId}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let res = null;",
+                  "try { res = pm.response.json(); } catch (e) {}",
+                  "if (res && res.success && res.data && Array.isArray(res.data.sessions) && res.data.sessions.length > 0) {",
+                  "  pm.collectionVariables.set('sessionId', res.data.sessions[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Revoke All User Sessions",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/{{userId}}/sessions/revoke",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "users", "{{userId}}", "sessions", "revoke"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          }
+        },
+        {
+          "name": "Revoke One User Session",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/{{userId}}/sessions/revoke",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "users", "{{userId}}", "sessions", "revoke"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"session_id\": \"{{sessionId}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Analyst Account (L1/L2)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "users", "{{userId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Notifications",
+      "item": [
+        {
+          "name": "List Notifications",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/notifications?page=1&limit=10&is_read=false",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "notifications"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" },
+                { "key": "is_read", "value": "false" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Mark Notification Read",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/notifications/{{notificationId}}/read",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "notifications", "{{notificationId}}", "read"]
+            }
+          }
+        },
+        {
+          "name": "Notifications Stream (SSE)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Accept", "value": "text/event-stream" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/notifications/stream",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "notifications", "stream"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "item": [
+        {
+          "name": "Get Dashboard",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/dashboard?range=24h&recent_limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "dashboard"],
+              "query": [
+                { "key": "range", "value": "24h" },
+                { "key": "recent_limit", "value": "10" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reports",
+      "item": [
+        {
+          "name": "Export Tickets CSV",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Accept", "value": "text/csv" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/reports/tickets.csv?range=24h&limit=1000",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "reports", "tickets.csv"],
+              "query": [
+                { "key": "range", "value": "24h" },
+                { "key": "limit", "value": "1000" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Export Tickets PDF",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Accept", "value": "application/pdf" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/reports/tickets.pdf?range=24h&limit=200",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "reports", "tickets.pdf"],
+              "query": [
+                { "key": "range", "value": "24h" },
+                { "key": "limit", "value": "200" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Webhook",
+      "item": [
+        {
+          "name": "Wazuh Raw Logs Grouping Test (Run 3x)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-API-Key", "value": "{{webhookApiKey}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/webhook/wazuh/raw-logs",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "webhook", "wazuh", "raw-logs"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\n    \"id\": \"{{groupEventId}}\",\n    \"customer\": \"{{groupCustomer}}\",\n    \"source_ip\": \"{{groupSourceIp}}\",\n    \"received_at\": \"{{groupNowIso}}\",\n    \"raw_log\": {\n      \"alert\": {\n        \"rule\": {\n          \"id\": \"{{groupRuleId}}\",\n          \"level\": 8\n        },\n        \"data\": {\n          \"src_ip\": \"{{groupSourceIp}}\",\n          \"timestamp\": \"{{groupNowIso}}\",\n          \"url\": \"/search.php\"\n        }\n      },\n      \"llm_metadata\": {\n        \"category\": \"Web Attack\",\n        \"attack_type\": \"SQL Injection\",\n        \"severity\": \"high\",\n        \"severity_level\": 8,\n        \"indicators\": {\n          \"source_ip\": \"{{groupSourceIp}}\"\n        }\n      }\n    }\n  }\n]"
+            },
+            "description": "Gunakan Collection Runner dengan Iterations = 3 agar request ini dieksekusi 3 kali beruntun."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const nowIso = new Date().toISOString();",
+                  "const runId = pm.collectionVariables.get('groupRunId') || String(Date.now());",
+                  "if (!pm.collectionVariables.get('groupRunId')) pm.collectionVariables.set('groupRunId', runId);",
+                  "const iter = (pm.info && typeof pm.info.iteration === 'number') ? pm.info.iteration + 1 : 1;",
+                  "const eventId = `evt-group-${runId}-${iter}-${Date.now()}`;",
+                  "pm.collectionVariables.set('groupNowIso', nowIso);",
+                  "pm.collectionVariables.set('groupEventId', eventId);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 201', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "let res = null;",
+                  "try { res = pm.response.json(); } catch (e) {}",
+                  "if (res && res.success && res.data) {",
+                  "  if (Array.isArray(res.data.created_ticket_ids) && res.data.created_ticket_ids.length > 0) {",
+                  "    pm.collectionVariables.set('ticketId', res.data.created_ticket_ids[0]);",
+                  "  }",
+                  "}",
+                  "",
+                  "console.log('grouping test response', res);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Wazuh Raw Logs Batch Ingest",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-API-Key", "value": "{{webhookApiKey}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/webhook/wazuh/raw-logs",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "webhook", "wazuh", "raw-logs"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\n    \"id\": \"100002\",\n    \"customer\": \"default\",\n    \"source_ip\": \"192.168.232.140\",\n    \"raw_log\": {\n      \"full\": \"json_wazuh_asli_disini\"\n    },\n    \"received_at\": \"2026-03-04T18:24:22Z\"\n  }\n]"
+            }
+          }
+        },
+        {
+          "name": "Wazuh Ingest",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-API-Key", "value": "{{webhookApiKey}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/webhook/wazuh",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "webhook", "wazuh"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"metadata\": {\n    \"timestamp\": \"2026-03-04T18:24:22Z\",\n    \"total_alerts\": 1\n  },\n  \"results\": [\n    {\n      \"alert_id\": \"100002\",\n      \"alert_description\": \"SQL injection attempt.\",\n      \"alert_level\": 7,\n      \"threat_category\": \"Web Attack\",\n      \"threat_type\": \"SQL Injection\",\n      \"severity\": \"high\",\n      \"timestamp\": \"2026-03-04T18:24:14Z\",\n      \"detailed_results\": {\n        \"llama-3.3-70b-versatile\": {\n          \"summary\": \"A SQL injection attempt was detected...\",\n          \"detailed_analysis\": \"The alert indicates...\",\n          \"attack_vector\": \"GET request to /search.php\",\n          \"potential_impact\": \"Extraction of sensitive information\",\n          \"mitre_attacks\": [{\"technique_id\": \"T1190\"}],\n          \"recommended_actions\": [\n            {\n              \"priority\": 1,\n              \"action\": \"Block the IP address 192.168.232.140\",\n              \"reason\": \"Prevent further malicious activity\"\n            }\n          ]\n        }\n      },\n      \"indicators\": {\n        \"source_ip\": \"192.168.232.140\",\n        \"url\": \"/search.php\"\n      },\n      \"raw_log\": {\n        \"full\": \"json_wazuh_asli_disini\"\n      }\n    }\n  ]\n}"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
