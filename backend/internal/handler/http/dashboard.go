@@ -6,8 +6,8 @@ import (
 
 	"github.com/go-chi/jwtauth/v5"
 
-	"github.com/pitik0x/Ai-Security-analyst/internal/domain/dashboard"
-	"github.com/pitik0x/Ai-Security-analyst/internal/handler/http/response"
+	"github.com/naxumi/soc-ticketing/internal/domain/dashboard"
+	"github.com/naxumi/soc-ticketing/internal/handler/http/response"
 )
 
 type DashboardHandler struct {

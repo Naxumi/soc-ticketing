@@ -9,9 +9,9 @@ import (
 
 	"github.com/go-chi/jwtauth/v5"
 
-	"github.com/pitik0x/Ai-Security-analyst/internal/domain/report"
-	"github.com/pitik0x/Ai-Security-analyst/internal/domain/user"
-	"github.com/pitik0x/Ai-Security-analyst/internal/handler/http/response"
+	"github.com/naxumi/soc-ticketing/internal/domain/report"
+	"github.com/naxumi/soc-ticketing/internal/domain/user"
+	"github.com/naxumi/soc-ticketing/internal/handler/http/response"
 )
 
 type ReportService interface {

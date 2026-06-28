@@ -8,7 +8,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/pitik0x/Ai-Security-analyst/internal/config"
+	"github.com/naxumi/soc-ticketing/internal/config"
 )
 
 type DB struct {

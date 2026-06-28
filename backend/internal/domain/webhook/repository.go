@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/pitik0x/Ai-Security-analyst/internal/domain/ticket"
+	"github.com/naxumi/soc-ticketing/internal/domain/ticket"
 )
 
 type Repository interface {

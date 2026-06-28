@@ -1,6 +1,6 @@
-module github.com/pitik0x/Ai-Security-analyst
+module github.com/naxumi/soc-ticketing
 
-go 1.26.3
+go 1.26.4
 
 require (
 	github.com/go-chi/chi/v5 v5.1.0

@@ -5,10 +5,10 @@ import (
 	"sort"
 	"time"
 
-	"github.com/pitik0x/Ai-Security-analyst/internal/domain/dashboard"
-	"github.com/pitik0x/Ai-Security-analyst/internal/domain/ticket"
-	"github.com/pitik0x/Ai-Security-analyst/internal/domain/user"
-	"github.com/pitik0x/Ai-Security-analyst/internal/pkg/validator"
+	"github.com/naxumi/soc-ticketing/internal/domain/dashboard"
+	"github.com/naxumi/soc-ticketing/internal/domain/ticket"
+	"github.com/naxumi/soc-ticketing/internal/domain/user"
+	"github.com/naxumi/soc-ticketing/internal/pkg/validator"
 )
 
 type Service struct {

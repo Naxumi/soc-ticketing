@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	domainAuth "github.com/pitik0x/Ai-Security-analyst/internal/domain/auth"
-	"github.com/pitik0x/Ai-Security-analyst/internal/domain/user"
-	"github.com/pitik0x/Ai-Security-analyst/internal/pkg/validator"
+	domainAuth "github.com/naxumi/soc-ticketing/internal/domain/auth"
+	"github.com/naxumi/soc-ticketing/internal/domain/user"
+	"github.com/naxumi/soc-ticketing/internal/pkg/validator"
 )
 
 type fakeUserRepo struct {

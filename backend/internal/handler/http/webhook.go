@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/pitik0x/Ai-Security-analyst/internal/domain/webhook"
-	"github.com/pitik0x/Ai-Security-analyst/internal/handler/http/response"
+	"github.com/naxumi/soc-ticketing/internal/domain/webhook"
+	"github.com/naxumi/soc-ticketing/internal/handler/http/response"
 )
 
 type WebhookHandler struct {

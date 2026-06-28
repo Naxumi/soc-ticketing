@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/pitik0x/Ai-Security-analyst/internal/domain/auth"
-	"github.com/pitik0x/Ai-Security-analyst/internal/domain/notification"
-	"github.com/pitik0x/Ai-Security-analyst/internal/domain/ticket"
-	"github.com/pitik0x/Ai-Security-analyst/internal/domain/user"
-	"github.com/pitik0x/Ai-Security-analyst/internal/pkg/validator"
+	"github.com/naxumi/soc-ticketing/internal/domain/auth"
+	"github.com/naxumi/soc-ticketing/internal/domain/notification"
+	"github.com/naxumi/soc-ticketing/internal/domain/ticket"
+	"github.com/naxumi/soc-ticketing/internal/domain/user"
+	"github.com/naxumi/soc-ticketing/internal/pkg/validator"
 )
 
 // HandleError maps domain errors to HTTP responses.

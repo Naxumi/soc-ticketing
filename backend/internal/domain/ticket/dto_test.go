@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/pitik0x/Ai-Security-analyst/internal/pkg/validator"
+	"github.com/naxumi/soc-ticketing/internal/pkg/validator"
 )
 
 func TestListTicketsQueryFromStrings_Defaults(t *testing.T) {

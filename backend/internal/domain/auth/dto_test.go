@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/pitik0x/Ai-Security-analyst/internal/domain/user"
-	"github.com/pitik0x/Ai-Security-analyst/internal/pkg/validator"
+	"github.com/naxumi/soc-ticketing/internal/domain/user"
+	"github.com/naxumi/soc-ticketing/internal/pkg/validator"
 )
 
 func TestRegisterRequest_Validate(t *testing.T) {

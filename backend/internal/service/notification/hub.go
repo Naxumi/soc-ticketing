@@ -3,7 +3,7 @@ package notification
 import (
 	"sync"
 
-	"github.com/pitik0x/Ai-Security-analyst/internal/domain/notification"
+	"github.com/naxumi/soc-ticketing/internal/domain/notification"
 )
 
 type Hub struct {

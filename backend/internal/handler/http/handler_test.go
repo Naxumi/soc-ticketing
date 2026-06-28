@@ -9,15 +9,15 @@ import (
 	"testing"
 	"time"
 
-	domainAuth "github.com/pitik0x/Ai-Security-analyst/internal/domain/auth"
-	"github.com/pitik0x/Ai-Security-analyst/internal/domain/notification"
-	"github.com/pitik0x/Ai-Security-analyst/internal/domain/ticket"
-	"github.com/pitik0x/Ai-Security-analyst/internal/domain/user"
-	"github.com/pitik0x/Ai-Security-analyst/internal/domain/webhook"
-	"github.com/pitik0x/Ai-Security-analyst/internal/handler/http/response"
+	domainAuth "github.com/naxumi/soc-ticketing/internal/domain/auth"
+	"github.com/naxumi/soc-ticketing/internal/domain/notification"
+	"github.com/naxumi/soc-ticketing/internal/domain/ticket"
+	"github.com/naxumi/soc-ticketing/internal/domain/user"
+	"github.com/naxumi/soc-ticketing/internal/domain/webhook"
+	"github.com/naxumi/soc-ticketing/internal/handler/http/response"
 
-	"github.com/pitik0x/Ai-Security-analyst/internal/config"
-	pkgJWT "github.com/pitik0x/Ai-Security-analyst/internal/pkg/jwt"
+	"github.com/naxumi/soc-ticketing/internal/config"
+	pkgJWT "github.com/naxumi/soc-ticketing/internal/pkg/jwt"
 )
 
 // ─── Fake auth service ──────────────────────────────────────────────────────

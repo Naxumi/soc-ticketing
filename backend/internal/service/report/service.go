@@ -14,8 +14,8 @@ import (
 
 	"github.com/phpdave11/gofpdf"
 
-	"github.com/pitik0x/Ai-Security-analyst/internal/domain/report"
-	"github.com/pitik0x/Ai-Security-analyst/internal/domain/ticket"
+	"github.com/naxumi/soc-ticketing/internal/domain/report"
+	"github.com/naxumi/soc-ticketing/internal/domain/ticket"
 )
 
 type Service struct {

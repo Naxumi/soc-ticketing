@@ -8,10 +8,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pitik0x/Ai-Security-analyst/internal/domain/notification"
-	"github.com/pitik0x/Ai-Security-analyst/internal/domain/ticket"
-	"github.com/pitik0x/Ai-Security-analyst/internal/domain/webhook"
-	"github.com/pitik0x/Ai-Security-analyst/internal/pkg/database"
+	"github.com/naxumi/soc-ticketing/internal/domain/notification"
+	"github.com/naxumi/soc-ticketing/internal/domain/ticket"
+	"github.com/naxumi/soc-ticketing/internal/domain/webhook"
+	"github.com/naxumi/soc-ticketing/internal/pkg/database"
 )
 
 type Service struct {

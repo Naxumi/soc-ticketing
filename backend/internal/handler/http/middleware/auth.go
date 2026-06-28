@@ -5,8 +5,8 @@ import (
 
 	"github.com/go-chi/jwtauth/v5"
 
-	"github.com/pitik0x/Ai-Security-analyst/internal/domain/auth"
-	"github.com/pitik0x/Ai-Security-analyst/internal/handler/http/response"
+	"github.com/naxumi/soc-ticketing/internal/domain/auth"
+	"github.com/naxumi/soc-ticketing/internal/handler/http/response"
 )
 
 func AuthRequired(ja *jwtauth.JWTAuth, sessionRepo auth.SessionRepository) func(http.Handler) http.Handler {

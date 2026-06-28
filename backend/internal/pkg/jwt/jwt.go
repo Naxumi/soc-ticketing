@@ -7,8 +7,8 @@ import (
 
 	"github.com/go-chi/jwtauth/v5"
 
-	"github.com/pitik0x/Ai-Security-analyst/internal/config"
-	"github.com/pitik0x/Ai-Security-analyst/internal/domain/user"
+	"github.com/naxumi/soc-ticketing/internal/config"
+	"github.com/naxumi/soc-ticketing/internal/domain/user"
 )
 
 type Service interface {

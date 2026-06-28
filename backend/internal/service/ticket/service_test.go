@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	domainTicket "github.com/pitik0x/Ai-Security-analyst/internal/domain/ticket"
+	domainTicket "github.com/naxumi/soc-ticketing/internal/domain/ticket"
 )
 
 func TestValidateTransition(t *testing.T) {

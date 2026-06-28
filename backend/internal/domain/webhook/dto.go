@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pitik0x/Ai-Security-analyst/internal/pkg/validator"
+	"github.com/naxumi/soc-ticketing/internal/pkg/validator"
 )
 
 type WazuhWebhookRequest struct {

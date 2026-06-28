@@ -4,7 +4,7 @@ import (
 	"crypto/subtle"
 	"net/http"
 
-	"github.com/pitik0x/Ai-Security-analyst/internal/handler/http/response"
+	"github.com/naxumi/soc-ticketing/internal/handler/http/response"
 )
 
 func APIKeyRequired(expectedKey string) func(http.Handler) http.Handler {

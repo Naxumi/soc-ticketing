@@ -7,8 +7,8 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/jwtauth/v5"
 
-	"github.com/pitik0x/Ai-Security-analyst/internal/domain/ticket"
-	"github.com/pitik0x/Ai-Security-analyst/internal/handler/http/response"
+	"github.com/naxumi/soc-ticketing/internal/domain/ticket"
+	"github.com/naxumi/soc-ticketing/internal/handler/http/response"
 )
 
 type TicketHandler struct {

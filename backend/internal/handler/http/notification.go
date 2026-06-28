@@ -8,9 +8,9 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/jwtauth/v5"
 
-	"github.com/pitik0x/Ai-Security-analyst/internal/domain/notification"
-	"github.com/pitik0x/Ai-Security-analyst/internal/handler/http/response"
-	notificationSvc "github.com/pitik0x/Ai-Security-analyst/internal/service/notification"
+	"github.com/naxumi/soc-ticketing/internal/domain/notification"
+	"github.com/naxumi/soc-ticketing/internal/handler/http/response"
+	notificationSvc "github.com/naxumi/soc-ticketing/internal/service/notification"
 )
 
 type NotificationHandler struct {

@@ -6,10 +6,10 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/pitik0x/Ai-Security-analyst/internal/domain/auth"
-	"github.com/pitik0x/Ai-Security-analyst/internal/domain/user"
-	"github.com/pitik0x/Ai-Security-analyst/internal/handler/http/response"
-	"github.com/pitik0x/Ai-Security-analyst/internal/pkg/jwt"
+	"github.com/naxumi/soc-ticketing/internal/domain/auth"
+	"github.com/naxumi/soc-ticketing/internal/domain/user"
+	"github.com/naxumi/soc-ticketing/internal/handler/http/response"
+	"github.com/naxumi/soc-ticketing/internal/pkg/jwt"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/jwtauth/v5"

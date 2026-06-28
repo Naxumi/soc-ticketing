@@ -7,12 +7,12 @@ import (
 
 	"golang.org/x/crypto/bcrypt"
 
-	domainAuth "github.com/pitik0x/Ai-Security-analyst/internal/domain/auth"
-	domainTicket "github.com/pitik0x/Ai-Security-analyst/internal/domain/ticket"
-	"github.com/pitik0x/Ai-Security-analyst/internal/domain/user"
-	"github.com/pitik0x/Ai-Security-analyst/internal/pkg/database"
-	"github.com/pitik0x/Ai-Security-analyst/internal/pkg/jwt"
-	"github.com/pitik0x/Ai-Security-analyst/internal/pkg/validator"
+	domainAuth "github.com/naxumi/soc-ticketing/internal/domain/auth"
+	domainTicket "github.com/naxumi/soc-ticketing/internal/domain/ticket"
+	"github.com/naxumi/soc-ticketing/internal/domain/user"
+	"github.com/naxumi/soc-ticketing/internal/pkg/database"
+	"github.com/naxumi/soc-ticketing/internal/pkg/jwt"
+	"github.com/naxumi/soc-ticketing/internal/pkg/validator"
 )
 
 type Service struct {

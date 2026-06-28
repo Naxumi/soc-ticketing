@@ -14,10 +14,10 @@ import (
 	"github.com/golang-cz/devslog"
 	"golang.org/x/crypto/bcrypt"
 
-	"github.com/pitik0x/Ai-Security-analyst/internal/config"
-	"github.com/pitik0x/Ai-Security-analyst/internal/domain/user"
-	"github.com/pitik0x/Ai-Security-analyst/internal/pkg/database"
-	"github.com/pitik0x/Ai-Security-analyst/internal/repository/postgresql"
+	"github.com/naxumi/soc-ticketing/internal/config"
+	"github.com/naxumi/soc-ticketing/internal/domain/user"
+	"github.com/naxumi/soc-ticketing/internal/pkg/database"
+	"github.com/naxumi/soc-ticketing/internal/repository/postgresql"
 )
 
 type seedUser struct {

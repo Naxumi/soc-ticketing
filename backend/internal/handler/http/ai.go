@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pitik0x/Ai-Security-analyst/internal/handler/http/response"
+	"github.com/naxumi/soc-ticketing/internal/handler/http/response"
 )
 
 type AIHandler struct {

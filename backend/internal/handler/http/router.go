@@ -7,9 +7,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/pitik0x/Ai-Security-analyst/internal/domain/auth"
-	"github.com/pitik0x/Ai-Security-analyst/internal/handler/http/middleware"
-	"github.com/pitik0x/Ai-Security-analyst/internal/pkg/jwt"
+	"github.com/naxumi/soc-ticketing/internal/domain/auth"
+	"github.com/naxumi/soc-ticketing/internal/handler/http/middleware"
+	"github.com/naxumi/soc-ticketing/internal/pkg/jwt"
 
 	"github.com/go-chi/chi/v5"
 	chiMiddleware "github.com/go-chi/chi/v5/middleware"

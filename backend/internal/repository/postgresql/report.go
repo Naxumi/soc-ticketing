@@ -3,8 +3,8 @@ package postgresql
 import (
 	"context"
 
-	"github.com/pitik0x/Ai-Security-analyst/internal/domain/report"
-	"github.com/pitik0x/Ai-Security-analyst/internal/pkg/database"
+	"github.com/naxumi/soc-ticketing/internal/domain/report"
+	"github.com/naxumi/soc-ticketing/internal/pkg/database"
 )
 
 type ReportRepository struct {
